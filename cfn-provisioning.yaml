@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cloudformation Stack for Contact-Form
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: 's3-bucket-name-for-hosting-index.html'
+
+Resources:
+  ### Creating website-hosting bucket ###
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref S3BucketName
+      WebsiteConfiguration:
+        IndexDocument: 'index.html'
+
+  ### Creating CloudFront OriginAccessIdentity ###
+  CloudFrontOAI:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: !Ref S3Bucket
+
+  ### Creating CloudFront distribution with s3-origin ###
+  CloudFrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt 'S3Bucket.RegionalDomainName'
+            Id: s3-origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - POST
+            - DELETE
+            - PUT
+            - PATCH
+          TargetOriginId: s3-origin
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: redirect-to-https
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt S3AuthFunction.FunctionMetadata.FunctionARN
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+        DefaultRootObject: index.html
+    DependsOn:
+      - CloudFrontOAI
+      - S3AuthFunction
+
+  ### Creating CloudFront Function for basic authentication ###
+  S3AuthFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      AutoPublish: true
+      FunctionCode: !Sub |
+        function handler(event) {
+          var authHeaders = event.request.headers.authorization;
+          var expected = "Basic c3VkeW9kOnNlY3VyZQ==";
+          if (authHeaders && authHeaders.value === expected) {
+            return event.request;
+          }
+          var response = {
+            statusCode: 401,
+            statusDescription: "Unauthorized",
+            headers: {
+              "www-authenticate": {
+                value: 'Basic realm="Enter credentials for this super secure site"',
+              },
+            },
+          };
+          return response;
+        }
+      FunctionConfig:
+        Runtime: cloudfront-js-1.0
+        Comment: 'Basic Auth for S3 Web-hosting Endpoint'
+      Name: "s3-basic-auth"
+
+  ### Updating Bucket policy with CloudFront OAI ###
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOAI}'
+            Action: 's3:GetObject'
+            Resource: !Sub '${S3Bucket.Arn}/*'
+    DependsOn: CloudFrontOAI
+
+Outputs:
+  S3BucketUrl:
+    Description: 'S3 Bucket Website URL'
+    Value: !GetAtt 'S3Bucket.WebsiteURL'
+
+  CloudFrontDistributionUrl:
+    Description: 'CloudFront Distribution URL'
+    Value: !GetAtt 'CloudFrontDistribution.DomainName'
