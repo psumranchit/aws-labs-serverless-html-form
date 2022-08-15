@@ -12,7 +12,7 @@ function sendEmail(e){
         //Submit value to APIGateway
         else {
             e.preventDefault();
-            var url = "https://o98hwtp18c.execute-api.ap-southeast-1.amazonaws.com/prod/contact";
+            var url = "REST-API-GATEWAY-GOES-HERE";
             var obj = {
 				name : name,
 				email : email,
