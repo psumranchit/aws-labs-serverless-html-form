@@ -101,6 +101,56 @@ Resources:
             Resource: !Sub '${S3Bucket.Arn}/*'
     DependsOn: CloudFrontOAI
 
+  ### Creating IAM execution role for lambda function ###
+  IamRoleLambdaExecution:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: '/'
+      RoleName: !Sub '${AWS::StackName}-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: !Sub "${AWS::StackName}-policy"
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*'
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+            - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}:*'
+
+  ### Creating Lambda Function ###
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref AWS::StackName
+      Code:
+        ZipFile: |
+          import json
+
+          def lambda_handler(event, context):
+            # Put-Your-Code-Here
+            return {
+              'statusCode': 200,
+              'body': json.dumps('Woohoo!!')
+            }
+      MemorySize: 128
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt 'IamRoleLambdaExecution.Arn'
+
+
 Outputs:
   S3BucketUrl:
     Description: 'S3 Bucket Website URL'
