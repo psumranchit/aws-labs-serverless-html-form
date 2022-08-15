@@ -6,6 +6,10 @@ Parameters:
     Type: String
     Description: 's3-bucket-name-for-hosting-index.html'
 
+  ApiGatewayResourceName:
+    Type: String
+    Default: 'submit'
+
 Resources:
   ### Creating website-hosting bucket ###
   S3Bucket:
@@ -141,6 +145,7 @@ Resources:
 
           def lambda_handler(event, context):
             # Put-Your-Code-Here
+            print(event['name'])
             return {
               'statusCode': 200,
               'body': json.dumps('Woohoo!!')
@@ -150,6 +155,94 @@ Resources:
       Handler: index.lambda_handler
       Role: !GetAtt 'IamRoleLambdaExecution.Arn'
 
+  ### Creating REST API ###
+  RestApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref AWS::StackName
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+    DependsOn: LambdaFunction
+
+  ### Creating API Resource ###
+  RestApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApiGateway
+      ParentId: !GetAtt RestApiGateway.RootResourceId
+      PathPart: !Ref ApiGatewayResourceName
+
+  ### Creating API POST Method ###
+  RestApiMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub >-
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              {"method.response.header.Access-Control-Allow-Origin": "'*'"}
+      MethodResponses:
+        - ResponseModels: {"application/json": "Empty"}
+          StatusCode: '200'
+          ResponseParameters:
+            {"method.response.header.Access-Control-Allow-Origin": "true"}
+      ResourceId: !Ref RestApiResource
+      RestApiId: !Ref RestApiGateway
+
+  ### Creating API Option Method ###
+  RestApiMethodOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationHttpMethod: OPTIONS
+        IntegrationResponses:
+          - StatusCode: '200'
+            ResponseParameters:
+              { "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"}
+      MethodResponses:
+        - ResponseModels: {"application/json": "Empty"}
+          StatusCode: '200'
+          ResponseParameters:
+            { "method.response.header.Access-Control-Allow-Headers": "true",
+            "method.response.header.Access-Control-Allow-Methods": "true",
+            "method.response.header.Access-Control-Allow-Origin": "true"}
+      ResourceId: !Ref RestApiResource
+      RestApiId: !Ref RestApiGateway
+
+  ### Deploying API Gateway ###
+  RestApiDeploy:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref RestApiGateway
+      StageName: prod
+    DependsOn:
+      - RestApiGateway
+      - RestApiMethod
+      - RestApiMethodOptions
+
+  ### Creating Lambda Invoke Permission ###
+  LambdaApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AWS::StackName
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApiGateway}/*/POST/${ApiGatewayResourceName}'
+    DependsOn: 
+      - LambdaFunction
+      - RestApiGateway
 
 Outputs:
   S3BucketUrl:
@@ -159,3 +252,7 @@ Outputs:
   CloudFrontDistributionUrl:
     Description: 'CloudFront Distribution URL'
     Value: !GetAtt 'CloudFrontDistribution.DomainName'
+
+  RestApiGatewayInvokeUrl:
+    Description: 'API Gateway Invoke URL'
+    Value: !Sub "https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/${ApiGatewayResourceName}"
