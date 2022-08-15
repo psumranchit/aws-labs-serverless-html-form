@@ -185,14 +185,17 @@ Resources:
         Uri: !Sub >-
           arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}/invocations
         IntegrationResponses:
-          - StatusCode: 200
+          - StatusCode: '200'
             ResponseParameters:
-              {"method.response.header.Access-Control-Allow-Origin": "'*'"}
+              {"method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+              "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'",
+              "method.response.header.Access-Control-Allow-Origin": "'*'"}
       MethodResponses:
-        - ResponseModels: {"application/json": "Empty"}
-          StatusCode: '200'
+        - StatusCode: '200'
           ResponseParameters:
-            {"method.response.header.Access-Control-Allow-Origin": "true"}
+            {"method.response.header.Access-Control-Allow-Headers": "true",
+            "method.response.header.Access-Control-Allow-Methods": "true",
+            "method.response.header.Access-Control-Allow-Origin": "true"}
       ResourceId: !Ref RestApiResource
       RestApiId: !Ref RestApiGateway
 
@@ -205,6 +208,8 @@ Resources:
       Integration:
         Type: MOCK
         IntegrationHttpMethod: OPTIONS
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates: {"application/json" : "{\"statusCode\": 200}"}
         IntegrationResponses:
           - StatusCode: '200'
             ResponseParameters:
@@ -215,7 +220,7 @@ Resources:
         - ResponseModels: {"application/json": "Empty"}
           StatusCode: '200'
           ResponseParameters:
-            { "method.response.header.Access-Control-Allow-Headers": "true",
+            {"method.response.header.Access-Control-Allow-Headers": "true",
             "method.response.header.Access-Control-Allow-Methods": "true",
             "method.response.header.Access-Control-Allow-Origin": "true"}
       ResourceId: !Ref RestApiResource
