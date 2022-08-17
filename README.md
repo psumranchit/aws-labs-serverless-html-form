@@ -28,5 +28,5 @@
 - Create identity and verify both Sender Address & Recipient Address you entered when deploying CloudFormation Stack in Step 1
 
 
-## Infra Diagram
+## Diagram
 ![alt text](diagram.jpg)
