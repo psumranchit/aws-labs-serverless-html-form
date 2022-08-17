@@ -29,4 +29,5 @@
 
 
 ## Diagram
+### Resources in blue dot shape will ne to be manually configured
 ![alt text](diagram.jpg)
