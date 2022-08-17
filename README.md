@@ -30,6 +30,6 @@
 
 ## Diagram
 
-> Resources in blue dot shape are optional and need manual configuration
-
 ![diagram](diagram.jpg)
+
+> Resources in blue dot shape are optional and require manual configuration
