@@ -16,7 +16,7 @@
 
 
 ## Step 3
-### Copy frontend html file to S3 Bucket
+### Upload frontend html file to S3 Bucket
 - Go to S3 Bucket using CloudFormation Resources tab
 - Copy following files in html folder to S3 bucket.
     - index.html
