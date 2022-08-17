@@ -11,7 +11,8 @@
 
 
 ## Step 2
-### API Gateway Invoke URL from Cloudformation Output into ./html/js/api.js
+### Edit ./html/js/api.js
+ - Grab API Gateway Invoke URL from Cloudformation Output and paste it into ./html/js/api.js
 
 
 ## Step 3
