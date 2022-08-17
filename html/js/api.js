@@ -1,4 +1,4 @@
-function sendEmail(e){ 
+function submitForm(e){ 
         //Getting Values
         var name  = document.getElementById('name').value;
 		var email = document.getElementById('email').value;
@@ -12,7 +12,7 @@ function sendEmail(e){
         //Submit value to APIGateway
         else {
             e.preventDefault();
-            var url = "REST-API-GATEWAY-GOES-HERE";
+            var url = "INVOKE-URL-GOES-HERE";
             var obj = {
 				name : name,
 				email : email,
