@@ -19,9 +19,9 @@
 ### Copy frontend html file to S3 Bucket
 - Go to S3 Bucket using CloudFormation Resources tab
 - Copy following files in html folder to S3 bucket.
--- index.html
--- js/api.js
--- css/style.css
+    - index.html
+    - js/api.js
+    - css/style.css
 
 ## Step 4
 ### Go to AWS Console -> Amazon SES
