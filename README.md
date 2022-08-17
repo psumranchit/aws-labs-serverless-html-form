@@ -8,3 +8,11 @@
 - Lambda Execution IAM Role
 - REST API Gateway
 - DynomoDB Table
+
+
+## Step 2
+### API Gateway Invoke URL from Cloudformation Output into ./html/js/api.js
+
+## Step 3
+### Go to AWS Console -> Amazon SES
+ - Create identity and verify both Sender Address & Recipient Address you enter when deploying Cloudformation Stack from Step 1
