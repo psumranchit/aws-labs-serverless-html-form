@@ -10,6 +10,14 @@ Parameters:
     Type: String
     Default: 'submit'
 
+  SenderEmail:
+    Type: String
+    Description: From Email
+
+  RecipientEmail:
+    Type: String
+    Description: To Email
+
 Resources:
   ### Creating website-hosting bucket ###
   S3Bucket:
@@ -140,12 +148,24 @@ Resources:
             - dynamodb:UpdateItem
             Resource:
             - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}'
+          - Effect: Allow
+            Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+            Resource:
+            - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmail}'
+            - !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${RecipientEmail}'
 
   ### Creating Lambda Function ###
   LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Ref AWS::StackName
+      Environment:
+        Variables:
+          tablename: !Ref AWS::StackName
+          sender: !Ref SenderEmail
+          recipient: !Ref RecipientEmail
       Code:
         ZipFile: !Sub |
           import json
@@ -154,8 +174,27 @@ Resources:
           import os
 
           def lambda_handler(event, context):
-            # Put-Your-Code-Here
-            print(event['name'])
+            ## Send submitted email via Amazon SES
+            ses = boto3.client('ses')
+            senderaddr = os.environ['sender']
+            recipientaddr = os.environ['recipient']
+            body = 'Name : ' + event['name'] + '\nEmail : ' + event['email'] + '\nComments : ' + event['comments']
+            ses.send_email(
+                Source = senderaddr,
+                Destination = {'ToAddresses': [recipientaddr]},
+                Message = {'Subject':{
+                      'Data':'${AWS::StackName} Submitted',
+                      'Charset':'UTF-8'
+                  },
+                  'Body':{
+                      'Text':{
+                          'Data':body,
+                          'Charset':'UTF-8'
+                      }
+                  }}
+            )
+
+            ## Put information to DynomoDB
             epoch = time.time()
             tblname = os.environ['tablename']
             ddb = boto3.resource('dynamodb')
