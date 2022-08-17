@@ -7,3 +7,4 @@
 - Lambda Function
 - Lambda Execution IAM Role
 - REST API Gateway
+- DynomoDB Table

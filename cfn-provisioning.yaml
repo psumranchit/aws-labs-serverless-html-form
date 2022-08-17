@@ -133,6 +133,13 @@ Resources:
             - logs:PutLogEvents
             Resource:
             - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}:*'
+          - Effect: Allow
+            Action:
+            - dynamodb:BatchWriteItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            Resource:
+            - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}'
 
   ### Creating Lambda Function ###
   LambdaFunction:
@@ -140,12 +147,25 @@ Resources:
     Properties:
       FunctionName: !Ref AWS::StackName
       Code:
-        ZipFile: |
+        ZipFile: !Sub |
           import json
+          import boto3
+          import time
+          import os
 
           def lambda_handler(event, context):
             # Put-Your-Code-Here
             print(event['name'])
+            epoch = time.time()
+            tblname = os.environ['tablename']
+            ddb = boto3.resource('dynamodb')
+            tbl = ddb.Table(tblname)
+            tbl.put_item(Item= {
+              'name': str(event['name']),
+              'email': str(event['email']),
+              'comments': str(event['comments']),
+              'timestamp': str(epoch)
+            })
             return {
               'statusCode': 200,
               'body': json.dumps('Woohoo!!')
@@ -249,10 +269,31 @@ Resources:
       - LambdaFunction
       - RestApiGateway
 
+  ## Creating DynamoDB ###
+  DynamoDbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: 'name'
+          AttributeType: S
+        -
+          AttributeName: 'timestamp'
+          AttributeType: S
+      KeySchema:
+        -
+          AttributeName: 'name'
+          KeyType: HASH
+        -
+          AttributeName: 'timestamp'
+          KeyType: RANGE
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
+      TableName: !Ref AWS::StackName
+
 Outputs:
-  S3BucketUrl:
-    Description: 'S3 Bucket Website URL'
-    Value: !GetAtt 'S3Bucket.WebsiteURL'
 
   CloudFrontDistributionUrl:
     Description: 'CloudFront Distribution URL'
