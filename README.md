@@ -29,5 +29,5 @@
 
 
 ## Diagram
-### Resources in blue dot shape are optional and need manual configuration
-![alt text](diagram.jpg)
+> Resources in blue dot shape are optional and need manual configuration
+![diagram](diagram.jpg)
