@@ -17,4 +17,4 @@
 
 ## Step 3
 ### Go to AWS Console -> Amazon SES
- - Create identity and verify both Sender Address & Recipient Address you enter when deploying Cloudformation Stack from Step 1
+ - Create identity and verify both Sender Address & Recipient Address you entered when deploying Cloudformation Stack in Step 1
