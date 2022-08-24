@@ -12,7 +12,7 @@
 
 ## Step 2
 ### Edit ./html/js/api.js
-- Copy API Gateway Invoke URL from CloudFormation Output tab and paste it into ./html/js/api.js
+- Copy API Gateway Invoke URL from CloudFormation Output tab and paste it into ~./html/js/api.js~
 
 
 ## Step 3
